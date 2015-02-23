@@ -32,14 +32,12 @@ package netfilter
 import "C"
 
 import (
-	"code.google.com/p/gopacket"
-	"code.google.com/p/gopacket/layers"
 	"fmt"
 	"unsafe"
 )
 
 type NFPacket struct {
-	Packet         gopacket.Packet
+	Data           []byte
 	verdictChannel chan Verdict
 }
 
@@ -145,8 +143,7 @@ func (nfq *NFQueue) run() {
 //export go_callback
 func go_callback(queueId C.int, data *C.uchar, len C.int, cb *chan NFPacket) Verdict {
 	xdata := C.GoBytes(unsafe.Pointer(data), len)
-	packet := gopacket.NewPacket(xdata, layers.LayerTypeIPv4, gopacket.DecodeOptions{true, true})
-	p := NFPacket{verdictChannel: make(chan Verdict), Packet: packet}
+	p := NFPacket{verdictChannel: make(chan Verdict), Data: xdata}
 	select {
 	case (*cb) <- p:
 		v := <-p.verdictChannel
